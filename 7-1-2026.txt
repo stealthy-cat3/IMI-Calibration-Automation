@@ -1,0 +1,5 @@
+1. 2 Mock Data in Calibration
+2. Demo the calibration process
+3. React flow
+4. Report generation
+5. Final working backend
