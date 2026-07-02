@@ -40,6 +40,9 @@ import {
   Radio,
 } from '@mui/material';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
+import VisibilityOutlinedIcon from '@mui/icons-material/VisibilityOutlined';
+import FileDownloadOutlinedIcon from '@mui/icons-material/FileDownloadOutlined';
+import DeleteOutlineOutlinedIcon from '@mui/icons-material/DeleteOutlineOutlined';
 import {
   fetchConnectedInstruments,
   addUutFromTemplate,
@@ -126,15 +129,120 @@ const InstrumentConnection = () => {
 
   const [openStartCalibrationDialog, setOpenStartCalibrationDialog] = useState(false);
   const [selectedOperationalMode, setSelectedOperationalMode] = useState('semi-automatic');
+  const [readSpeed, setReadSpeed] = useState(800);
 
   const [localUut, setLocalUut] = useState(null);
-  const [isForceDisconnected, setIsForceDisconnected] = useState(false);
-  const [consoleModalOpen, setConsoleModalOpen] = useState(false);
-  const [consoleLogs, setConsoleLogs] = useState([
-    '> INIT: CALIBRATION_SESSION',
-    '> CONNECTING TO GPIB:0',
-    '> SYSTEM:READY',
+
+  // Mock data and state for finished calibrations log
+  const [finishedCalibrations, setFinishedCalibrations] = useState([
+    {
+      id: 'cal-log-001',
+      instrumentName: 'Fluke 87V Digital Multimeter',
+      serialNumber: 'SN-998877',
+      completionDate: new Date(Date.now() - 86400000).toLocaleString(), // 1 day ago
+      status: 'Passed',
+      testPoints: [
+        // DC Voltage
+        { name: 'DC Voltage Zero Offset', applied: '0.000 mV', reading: '0.001 mV', deviation: '0.001 mV', result: 'Pass' },
+        { name: 'DC Voltage Gain', applied: '100.00 mV', reading: '100.01 mV', deviation: '0.01 mV', result: 'Pass' },
+        { name: 'DC Voltage Gain', applied: '1.0000 V', reading: '0.9998 V', deviation: '-0.0002 V', result: 'Pass' },
+        { name: 'DC Voltage Gain', applied: '10.000 V', reading: '10.001 V', deviation: '0.001 V', result: 'Pass' },
+        { name: 'DC Voltage Gain', applied: '100.00 V', reading: '99.98 V', deviation: '-0.02 V', result: 'Pass' },
+        { name: 'DC Voltage Gain', applied: '1000.0 V', reading: '999.9 V', deviation: '-0.1 V', result: 'Pass' },
+        
+        // DC Current
+        { name: 'DC Current Zero Offset', applied: '0.000 mA', reading: '0.001 mA', deviation: '0.001 mA', result: 'Pass' },
+        { name: 'DC Current Gain', applied: '10.000 mA', reading: '9.998 mA', deviation: '-0.002 mA', result: 'Pass' },
+        { name: 'DC Current Gain', applied: '100.00 mA', reading: '100.02 mA', deviation: '0.02 mA', result: 'Pass' },
+        { name: 'DC Current Gain', applied: '1.0000 A', reading: '0.9999 A', deviation: '-0.0001 A', result: 'Pass' },
+        { name: 'DC Current Gain', applied: '2.0000 A', reading: '2.0002 A', deviation: '0.0002 A', result: 'Pass' },
+        
+        // Resistance (2-Wire)
+        { name: 'Ohms Zero Offset', applied: '0.00 Ω', reading: '0.02 Ω', deviation: '0.02 Ω', result: 'Pass' },
+        { name: 'Ohms Gain', applied: '100.00 Ω', reading: '99.98 Ω', deviation: '-0.02 Ω', result: 'Pass' },
+        { name: 'Ohms Gain', applied: '1.0000 kΩ', reading: '1.0001 kΩ', deviation: '0.0001 kΩ', result: 'Pass' },
+        { name: 'Ohms Gain', applied: '10.000 kΩ', reading: '9.999 kΩ', deviation: '-0.001 kΩ', result: 'Pass' },
+        { name: 'Ohms Gain', applied: '100.00 kΩ', reading: '100.01 kΩ', deviation: '0.01 kΩ', result: 'Pass' },
+        { name: 'Ohms Gain', applied: '1.0000 MΩ', reading: '1.0002 MΩ', deviation: '0.0002 MΩ', result: 'Pass' },
+        { name: 'Ohms Gain', applied: '10.000 MΩ', reading: '9.995 MΩ', deviation: '-0.005 MΩ', result: 'Pass' },
+        { name: 'Ohms Gain', applied: '100.00 MΩ', reading: '99.90 MΩ', deviation: '-0.10 MΩ', result: 'Pass' },
+        
+        // AC Voltage
+        { name: 'AC Voltage Gain (1 kHz)', applied: '10.00 mV', reading: '9.98 mV', deviation: '-0.02 mV', result: 'Pass' },
+        { name: 'AC Voltage Gain (1 kHz)', applied: '100.00 mV', reading: '100.05 mV', deviation: '0.05 mV', result: 'Pass' },
+        { name: 'AC Voltage Gain (1 kHz)', applied: '1.0000 V', reading: '0.9995 V', deviation: '-0.0005 V', result: 'Pass' },
+        { name: 'AC Voltage Gain (1 kHz)', applied: '10.000 V', reading: '10.002 V', deviation: '0.002 V', result: 'Pass' },
+        { name: 'AC Voltage Gain (1 kHz)', applied: '100.00 V', reading: '99.95 V', deviation: '-0.05 V', result: 'Pass' },
+        { name: 'AC Voltage Gain (1 kHz)', applied: '750.0 V', reading: '749.8 V', deviation: '-0.2 V', result: 'Pass' },
+        
+        // AC Current
+        { name: 'AC Current Gain (1 kHz)', applied: '1.0000 A', reading: '0.9995 A', deviation: '-0.0005 A', result: 'Pass' },
+        { name: 'AC Current Gain (1 kHz)', applied: '2.0000 A', reading: '2.0008 A', deviation: '0.0008 A', result: 'Pass' },
+        
+        // Frequency
+        { name: 'Frequency Gain (0.1 Vrms)', applied: '100.00 Hz', reading: '100.00 Hz', deviation: '0.00 Hz', result: 'Pass' },
+        { name: 'Frequency Gain (1 Vrms)', applied: '100.00 kHz', reading: '100.01 kHz', deviation: '0.01 kHz', result: 'Pass' }
+      ]
+    },
+    {
+      id: 'cal-log-002',
+      instrumentName: 'Agilent 34401A Digital Multimeter',
+      serialNumber: 'GPIB-22',
+      completionDate: new Date(Date.now() - 172800000).toLocaleString(), // 2 days ago
+      status: 'Passed',
+      testPoints: [
+        // DC Voltage
+        { name: 'DC Voltage Zero Offset', applied: '0.00000 mV', reading: '0.00001 mV', deviation: '0.00001 mV', result: 'Pass' },
+        { name: 'DC Voltage Gain', applied: '100.000 mV', reading: '100.001 mV', deviation: '0.001 mV', result: 'Pass' },
+        { name: 'DC Voltage Gain', applied: '1.00000 V', reading: '0.99998 V', deviation: '-0.00002 V', result: 'Pass' },
+        { name: 'DC Voltage Gain', applied: '10.0000 V', reading: '10.0001 V', deviation: '0.0001 V', result: 'Pass' },
+        { name: 'DC Voltage Gain', applied: '100.000 V', reading: '99.998 V', deviation: '-0.002 V', result: 'Pass' },
+        { name: 'DC Voltage Gain', applied: '1000.00 V', reading: '999.99 V', deviation: '-0.01 V', result: 'Pass' },
+        
+        // DC Current
+        { name: 'DC Current Zero Offset', applied: '0.00000 mA', reading: '0.00002 mA', deviation: '0.00002 mA', result: 'Pass' },
+        { name: 'DC Current Gain', applied: '10.0000 mA', reading: '9.9998 mA', deviation: '-0.0002 mA', result: 'Pass' },
+        { name: 'DC Current Gain', applied: '100.000 mA', reading: '100.002 mA', deviation: '0.002 mA', result: 'Pass' },
+        { name: 'DC Current Gain', applied: '1.00000 A', reading: '0.99999 A', deviation: '-0.00001 A', result: 'Pass' },
+        { name: 'DC Current Gain', applied: '3.00000 A', reading: '3.00005 A', deviation: '0.00005 A', result: 'Pass' },
+        
+        // Resistance (4-Wire & 2-Wire)
+        { name: 'Ohms Zero Offset (4W)', applied: '0.0000 Ω', reading: '0.0002 Ω', deviation: '0.0002 Ω', result: 'Pass' },
+        { name: 'Ohms Gain (4W)', applied: '100.000 Ω', reading: '99.998 Ω', deviation: '-0.002 Ω', result: 'Pass' },
+        { name: 'Ohms Gain (4W)', applied: '1.00000 kΩ', reading: '1.00001 kΩ', deviation: '0.00001 kΩ', result: 'Pass' },
+        { name: 'Ohms Gain (4W)', applied: '10.0000 kΩ', reading: '9.9999 kΩ', deviation: '-0.0001 kΩ', result: 'Pass' },
+        { name: 'Ohms Gain (4W)', applied: '100.000 kΩ', reading: '100.001 kΩ', deviation: '0.001 kΩ', result: 'Pass' },
+        { name: 'Ohms Gain (4W)', applied: '1.00000 MΩ', reading: '1.00002 MΩ', deviation: '0.00002 MΩ', result: 'Pass' },
+        { name: 'Ohms Gain (2W)', applied: '10.0000 MΩ', reading: '9.9995 MΩ', deviation: '-0.0005 MΩ', result: 'Pass' },
+        { name: 'Ohms Gain (2W)', applied: '100.000 MΩ', reading: '99.990 MΩ', deviation: '-0.010 MΩ', result: 'Pass' },
+        
+        // AC Voltage
+        { name: 'AC Voltage Gain (1 kHz)', applied: '100.000 mV', reading: '100.005 mV', deviation: '0.005 mV', result: 'Pass' },
+        { name: 'AC Voltage Gain (1 kHz)', applied: '1.00000 V', reading: '0.99995 V', deviation: '-0.00005 V', result: 'Pass' },
+        { name: 'AC Voltage Gain (1 kHz)', applied: '10.0000 V', reading: '10.0002 V', deviation: '0.0002 V', result: 'Pass' },
+        { name: 'AC Voltage Gain (1 kHz)', applied: '100.000 V', reading: '99.995 V', deviation: '-0.005 V', result: 'Pass' },
+        { name: 'AC Voltage Gain (1 kHz)', applied: '750.00 V', reading: '749.98 V', deviation: '-0.02 V', result: 'Pass' },
+        
+        // AC Current
+        { name: 'AC Current Gain (1 kHz)', applied: '1.00000 A', reading: '0.99995 A', deviation: '-0.00005 A', result: 'Pass' },
+        { name: 'AC Current Gain (1 kHz)', applied: '3.00000 A', reading: '3.00008 A', deviation: '0.00008 A', result: 'Pass' },
+        
+        // Frequency
+        { name: 'Frequency Gain (0.1 Vrms)', applied: '100.000 Hz', reading: '100.000 Hz', deviation: '0.000 Hz', result: 'Pass' },
+        { name: 'Frequency Gain (1 Vrms)', applied: '100.000 kHz', reading: '100.001 kHz', deviation: '0.001 kHz', result: 'Pass' }
+      ]
+    }
   ]);
+  const [viewResultsModal, setViewResultsModal] = useState(null);
+
+  const handleViewResults = (record) => setViewResultsModal(record);
+  const handleDownloadExcel = (record) => alert(`Downloading Excel report for ${record.instrumentName} (${record.serialNumber})...`);
+  const handleDeleteRecord = (id) => {
+    if (window.confirm('Are you sure you want to delete this calibration record?')) {
+      setFinishedCalibrations(prev => prev.filter(item => item.id !== id));
+    }
+  };
+  const [isForceDisconnected, setIsForceDisconnected] = useState(false);
 
   const effectiveUut = isForceDisconnected ? null : (localUut || uutDetails);
 
@@ -224,6 +332,14 @@ const InstrumentConnection = () => {
       alert('Please add a UUT before starting calibration.');
       return;
     }
+    
+    // Auto-select Fully-Automatic if the device supports it
+    if (!effectiveUut.type?.toLowerCase().includes('handheld') && effectiveUut.HasGPIB !== false && effectiveUut.commInterface !== 'none') {
+      setSelectedOperationalMode('fully-automatic');
+    } else {
+      setSelectedOperationalMode('semi-automatic');
+    }
+    
     setOpenStartCalibrationDialog(true);
   };
 
@@ -231,15 +347,24 @@ const InstrumentConnection = () => {
     setOpenStartCalibrationDialog(false);
   };
 
-  const handleStartCalibration = async () => {
+const handleStartCalibration = async () => {
     if (!effectiveUut) {
       alert('No UUT selected for calibration.');
       return;
     }
     try {
+      // Clear previous session states so we start fresh
+      Object.keys(sessionStorage).forEach(key => {
+        if (key.startsWith('calState_')) {
+          sessionStorage.removeItem(key);
+        }
+      });
+      sessionStorage.setItem('calState_operationalMode', JSON.stringify(selectedOperationalMode));
+      sessionStorage.setItem('calState_readSpeed', JSON.stringify(readSpeed));
+
       await dispatch(startCalibrationSession(effectiveUut, selectedOperationalMode));
       handleCloseStartCalibrationDialog();
-      navigate(`/calibration/run/${effectiveUut.id}`);
+      navigate(`/calibration/run/${effectiveUut.id}`, { state: { operationalMode: selectedOperationalMode, readSpeed: readSpeed } });
     } catch (err) {
       console.error("Failed to start calibration:", err);
       // Error handling is managed by the global error state
@@ -247,19 +372,6 @@ const InstrumentConnection = () => {
   };
 
   const isCalibrationActive = currentSession?.status === 'in_progress';
-
-  useEffect(() => {
-    let interval;
-    if (consoleModalOpen && isCalibrationActive) {
-      interval = setInterval(() => {
-        setConsoleLogs(prev => {
-          const newLog = `> [${new Date().toLocaleTimeString()}] SCPI: MEAS:VOLT:DC? -> ${Math.random().toFixed(4)}`;
-          return [...prev, newLog];
-        });
-      }, 1500);
-    }
-    return () => clearInterval(interval);
-  }, [consoleModalOpen, isCalibrationActive]);
 
   return (
     <Container maxWidth="lg" sx={{ py: 1 }}>
@@ -287,17 +399,18 @@ const InstrumentConnection = () => {
           {/* Reference Calibrator - Always First and Connected */}
           <Grid size={12}>
             <Card 
-              elevation={3} 
-              sx={{ p: 1, borderRadius: 3, borderLeft: '6px solid', borderColor: 'primary.main', bgcolor: 'primary.lightest', cursor: 'pointer', transition: '0.2s', '&:hover': { boxShadow: 4 } }}
+              elevation={0} 
+              className="relative bg-brand-panel border border-brand-border rounded-xl cursor-pointer hover:border-amber-500/50 shadow-md shadow-amber-500/5 transition-colors overflow-hidden p-2"
               onClick={() => setInstrumentInfoModal({ name: 'Fluke 5522A', brand: 'Fluke', model: '5522A', type: 'Multi-Product Calibrator', serialNumber: 'System-Queried', address: '0', status: 'Connected', calibrationStatus: 'Reference Standard', templateName: 'N/A' })}
             >
+              <div className="absolute left-0 top-0 w-1.5 h-full bg-amber-500"></div>
               <CardContent>
-                <Typography variant="h6" color="primary.main" fontWeight="bold">Reference Calibrator</Typography>
+                <Typography variant="h6" className="font-display font-bold text-amber-500 tracking-tight">Reference Calibrator</Typography>
                 <Grid container spacing={2} sx={{ mt: 0.5 }}>
-                  <Grid size={{ xs: 12, sm: 6, md: 3 }}><Typography variant="body2" color="text.secondary"><b>Model Name:</b> Fluke 5522A</Typography></Grid>
-                  <Grid size={{ xs: 12, sm: 6, md: 3 }}><Typography variant="body2" color="text.secondary"><b>Serial Number:</b> Auto-Retrieved</Typography></Grid>
-                  <Grid size={{ xs: 12, sm: 6, md: 3 }}><Typography variant="body2" color="text.secondary"><b>GPIB Address:</b> 0</Typography></Grid>
-                  <Grid size={{ xs: 12, sm: 6, md: 3 }}><Typography variant="body2" color="success.main" fontWeight="bold">Status: Connected</Typography></Grid>
+                  <Grid size={{ xs: 12, sm: 6, md: 3 }}><Typography variant="body2" className="text-[11px] font-mono text-gray-400"><b className="text-gray-300 font-sans">Model Name:</b> Fluke 5522A</Typography></Grid>
+                  <Grid size={{ xs: 12, sm: 6, md: 3 }}><Typography variant="body2" className="text-[11px] font-mono text-gray-400"><b className="text-gray-300 font-sans">Serial Number:</b> Auto-Retrieved</Typography></Grid>
+                  <Grid size={{ xs: 12, sm: 6, md: 3 }}><Typography variant="body2" className="text-[11px] font-mono text-gray-400"><b className="text-gray-300 font-sans">GPIB Address:</b> 0</Typography></Grid>
+                  <Grid size={{ xs: 12, sm: 6, md: 3 }}><Typography variant="body2" className="text-[11px] text-emerald-400 font-bold font-mono">Status: Connected</Typography></Grid>
                 </Grid>
               </CardContent>
             </Card>
@@ -320,11 +433,12 @@ const InstrumentConnection = () => {
                       ...(isThisDeviceCalibrating ? { border: '2px solid', borderColor: 'primary.main', bgcolor: 'primary.lightest' } : {})
                     }}
                     onClick={() => {
-                      if (isThisDeviceCalibrating) {
-                        setConsoleModalOpen(true);
-                      } else {
-                        setInstrumentInfoModal({ ...instrument, brand: instrument.brand || 'Unknown', model: instrument.model || instrument.name, calibrationStatus: 'Pending' });
-                      }
+                      setInstrumentInfoModal({ 
+                        ...instrument, 
+                        brand: instrument.brand || 'Unknown', 
+                        model: instrument.model || instrument.name, 
+                        calibrationStatus: isThisDeviceCalibrating ? 'In Progress' : 'Pending' 
+                      });
                     }}
                   >
                     <CardContent>
@@ -374,7 +488,16 @@ const InstrumentConnection = () => {
               cursor: isCalibrationActive ? 'pointer' : 'default', 
               '&:hover': isCalibrationActive ? { boxShadow: 6 } : {} 
             }}
-            onClick={() => { if (isCalibrationActive) setConsoleModalOpen(true); }}
+            onClick={() => { 
+              if (isCalibrationActive) {
+                setInstrumentInfoModal({ 
+                  ...effectiveUut, 
+                  brand: effectiveUut.brand || 'Unknown', 
+                  model: effectiveUut.model || effectiveUut.name, 
+                  calibrationStatus: 'In Progress' 
+                });
+              } 
+            }}
           >
             <CardContent sx={{ pb: 0.5, pt: 0.5 }}>
               <Typography variant="subtitle1" fontWeight="bold">{effectiveUut.name}</Typography>
@@ -408,6 +531,63 @@ const InstrumentConnection = () => {
         )}
       </Box>
 
+      {/* Finished Calibrated Instruments Log */}
+      <Box sx={{ mb: 1.5 }}>
+        <Typography variant="h6" component="h2" sx={{ mb: 0.5, fontWeight: 'bold' }}>
+          Finished Calibrations Log
+        </Typography>
+        <TableContainer component={Paper} elevation={3} sx={{ borderRadius: 2, overflow: 'hidden' }}>
+          <Table size="small">
+            <TableHead sx={{ bgcolor: 'rgba(255, 255, 255, 0.05)' }}>
+              <TableRow>
+                <TableCell><strong>Instrument Name</strong></TableCell>
+                <TableCell><strong>Serial Number</strong></TableCell>
+                <TableCell><strong>Completion Date</strong></TableCell>
+                <TableCell><strong>Status</strong></TableCell>
+                <TableCell align="center"><strong>Actions</strong></TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {finishedCalibrations.length > 0 ? finishedCalibrations.map((record) => (
+                <TableRow key={record.id} hover>
+                  <TableCell>{record.instrumentName}</TableCell>
+                  <TableCell>{record.serialNumber}</TableCell>
+                  <TableCell>{record.completionDate}</TableCell>
+                  <TableCell>
+                    <Typography variant="caption" sx={{ bgcolor: 'success.dark', color: 'white', px: 1, py: 0.5, borderRadius: 1, fontWeight: 'bold' }}>
+                      {record.status}
+                    </Typography>
+                  </TableCell>
+                  <TableCell align="center">
+                    <Tooltip title="View Test Points">
+                      <IconButton size="small" onClick={() => handleViewResults(record)} color="primary">
+                        <VisibilityOutlinedIcon fontSize="small" />
+                      </IconButton>
+                    </Tooltip>
+                    <Tooltip title="Download Excel">
+                      <IconButton size="small" onClick={() => handleDownloadExcel(record)} color="success">
+                        <FileDownloadOutlinedIcon fontSize="small" />
+                      </IconButton>
+                    </Tooltip>
+                    <Tooltip title="Delete Record">
+                      <IconButton size="small" onClick={() => handleDeleteRecord(record.id)} color="error">
+                        <DeleteOutlineOutlinedIcon fontSize="small" />
+                      </IconButton>
+                    </Tooltip>
+                  </TableCell>
+                </TableRow>
+              )) : (
+                <TableRow>
+                  <TableCell colSpan={5} align="center" sx={{ py: 3, color: 'text.secondary' }}>
+                    No completed calibrations found.
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </TableContainer>
+      </Box>
+
         {/* Add UUT Wizard Modal */}
       <Dialog open={openAddUutDialog} onClose={handleCloseAddUutDialog} fullWidth maxWidth="md">
         <DialogTitle sx={{ fontWeight: 'bold', py: 1.5, fontSize: '1.1rem' }}>Connect Instrument</DialogTitle>
@@ -420,10 +600,10 @@ const InstrumentConnection = () => {
           {activeStep === 0 && (
             <Box>
               <Typography variant="subtitle1" gutterBottom>Select an existing calibration template:</Typography>
-              <TableContainer component={Paper} variant="outlined">
+              <TableContainer component={Paper} variant="outlined" sx={{ bgcolor: 'transparent' }}>
                 <Table size="small">
                   <TableHead>
-                    <TableRow sx={{ bgcolor: 'grey.100' }}>
+                    <TableRow sx={{ bgcolor: 'rgba(255, 255, 255, 0.05)' }}>
                       <TableCell><strong>Template Name</strong></TableCell>
                       <TableCell><strong>Type</strong></TableCell>
                       <TableCell><strong>Description</strong></TableCell>
@@ -555,6 +735,24 @@ const InstrumentConnection = () => {
           )}
         </DialogContent>
         <DialogActions>
+{instrumentInfoModal?.calibrationStatus === 'In Progress' && (
+            <Button 
+              variant="contained" 
+              onClick={() => {
+                const storedModeRaw = sessionStorage.getItem('calState_operationalMode');
+                const storedSpeedRaw = sessionStorage.getItem('calState_readSpeed');
+                const storedMode = storedModeRaw ? JSON.parse(storedModeRaw) : (currentSession?.operationalMode || 'semi-automatic');
+                const storedSpeed = storedSpeedRaw ? JSON.parse(storedSpeedRaw) : (currentSession?.readSpeed || 800);
+                
+                navigate(`/calibration/run/${instrumentInfoModal.id || effectiveUut?.id}`, { 
+                  state: { operationalMode: storedMode, readSpeed: storedSpeed } 
+                });
+              }} 
+              sx={{ bgcolor: 'warning.main', '&:hover': { bgcolor: 'warning.dark' }, color: 'white', fontWeight: 'bold' }}
+            >
+              Go to Calibration Run
+            </Button>
+          )}
           <Button onClick={() => setInstrumentInfoModal(null)}>Close</Button>
         </DialogActions>
       </Dialog>
@@ -585,6 +783,17 @@ const InstrumentConnection = () => {
               <MenuItem value="manual-guided">Manual Guided</MenuItem>
             </Select>
           </FormControl>
+          {selectedOperationalMode === 'fully-automatic' && (
+            <TextField
+              margin="dense"
+              label="Time between trials (ms)"
+              type="number"
+              fullWidth
+              value={readSpeed}
+              onChange={(e) => setReadSpeed(parseInt(e.target.value, 10) || 800)}
+              sx={{ mt: 2 }}
+            />
+          )}
           <Box sx={{ display: 'flex', alignItems: 'center', mt: 1 }}>
             <Typography variant="body2" color="text.secondary">
               Select the mode for the calibration workflow.
@@ -617,23 +826,73 @@ const InstrumentConnection = () => {
         </DialogActions>
       </Dialog>
 
-      {/* Calibration Console Modal */}
-      <Dialog open={consoleModalOpen} onClose={() => setConsoleModalOpen(false)} fullWidth maxWidth="md">
-        <DialogTitle sx={{ fontWeight: 'bold', bgcolor: '#1e1e1e', color: '#4caf50' }}>
-          Live Calibration Console - {effectiveUut?.name || 'UUT'}
-        </DialogTitle>
-        <DialogContent dividers sx={{ bgcolor: '#1e1e1e', color: '#4caf50', minHeight: 300, fontFamily: 'monospace' }}>
-          {consoleLogs.map((log, index) => (
-            <Typography key={index} variant="body2" sx={{ fontFamily: 'monospace', mb: 0.5 }}>
-              {log}
-            </Typography>
-          ))}
+      {/* View Results Modal */}
+      <Dialog open={Boolean(viewResultsModal)} onClose={() => setViewResultsModal(null)} fullWidth maxWidth="md">
+        <DialogTitle sx={{ fontWeight: 'bold' }}>Calibration Results</DialogTitle>
+        <DialogContent dividers>
+          {viewResultsModal && (
+            <Box>
+              <Grid container spacing={2} sx={{ mb: 2 }}>
+                <Grid size={{ xs: 12, sm: 6 }}>
+                  <Typography variant="subtitle2" color="text.secondary">Instrument Name</Typography>
+                  <Typography fontWeight="bold">{viewResultsModal.instrumentName}</Typography>
+                </Grid>
+                <Grid size={{ xs: 12, sm: 6 }}>
+                  <Typography variant="subtitle2" color="text.secondary">Serial Number</Typography>
+                  <Typography fontWeight="bold">{viewResultsModal.serialNumber}</Typography>
+                </Grid>
+                <Grid size={{ xs: 12, sm: 6 }}>
+                  <Typography variant="subtitle2" color="text.secondary">Completion Date</Typography>
+                  <Typography>{viewResultsModal.completionDate}</Typography>
+                </Grid>
+                <Grid size={{ xs: 12, sm: 6 }}>
+                  <Typography variant="subtitle2" color="text.secondary">Status</Typography>
+                  <Typography color="success.main" fontWeight="bold">{viewResultsModal.status}</Typography>
+                </Grid>
+              </Grid>
+
+              <Typography variant="h6" sx={{ mb: 1, mt: 2 }}>Executed Test Points</Typography>
+              <TableContainer component={Paper} variant="outlined" sx={{ bgcolor: 'transparent' }}>
+                <Table size="small">
+                  <TableHead sx={{ bgcolor: 'rgba(255, 255, 255, 0.05)' }}>
+                    <TableRow>
+                      <TableCell><strong>Test Point</strong></TableCell>
+                      <TableCell><strong>Applied Value</strong></TableCell>
+                      <TableCell><strong>Reading</strong></TableCell>
+                      <TableCell><strong>Deviation</strong></TableCell>
+                      <TableCell><strong>Result</strong></TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {viewResultsModal.testPoints.map((tp, idx) => (
+                      <TableRow key={idx} hover>
+                        <TableCell>{tp.name}</TableCell>
+                        <TableCell>{tp.applied}</TableCell>
+                        <TableCell>{tp.reading}</TableCell>
+                        <TableCell>{tp.deviation}</TableCell>
+                        <TableCell>
+                          <Typography variant="caption" sx={{ color: tp.result === 'Pass' ? 'success.main' : 'error.main', fontWeight: 'bold' }}>
+                            {tp.result}
+                          </Typography>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+            </Box>
+          )}
         </DialogContent>
-        <DialogActions sx={{ bgcolor: '#1e1e1e' }}>
-          <Button onClick={() => navigate(`/calibration/run/${effectiveUut?.id}`)} color="primary" variant="contained">
-            Go to Calibration Run
+        <DialogActions>
+          <Button 
+            variant="contained" 
+            color="success"
+            startIcon={<FileDownloadOutlinedIcon />}
+            onClick={() => handleDownloadExcel(viewResultsModal)}
+          >
+            Export Excel
           </Button>
-          <Button onClick={() => setConsoleModalOpen(false)} sx={{ color: '#fff' }}>Close</Button>
+          <Button onClick={() => setViewResultsModal(null)}>Close</Button>
         </DialogActions>
       </Dialog>
     </Container>

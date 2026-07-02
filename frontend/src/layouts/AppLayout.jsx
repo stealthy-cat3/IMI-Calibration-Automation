@@ -19,18 +19,23 @@ const AppLayout = () => {
   const matchedIndex = navLinks.findIndex(link => location.pathname.startsWith(link.path));
 
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', bgcolor: 'background.default', color: 'text.primary' }}>
-      <Box component="header" sx={{ bgcolor: 'background.paper', p: 2, borderBottom: 1, borderColor: 'divider', boxShadow: 1, zIndex: 1 }}>
-        <Typography variant="h5" component="h1" sx={{ m: 0 }}>Application Header</Typography>
-      </Box>
-      <Box sx={{ display: 'flex', flexGrow: 1 }}>
-        <Box component="nav" sx={{ bgcolor: 'background.paper', width: 250, borderRight: 1, borderColor: 'divider', boxShadow: 1, display: 'flex', flexDirection: 'column' }}>
-          <Typography variant="h6" component="h2" sx={{ p: 2, pb: 1, mt: 0, mb: 0, color: 'text.secondary' }}>Navigation</Typography>
+    <div className="min-h-screen bg-brand-bg text-gray-100 font-sans flex flex-col pb-10">
+      <header className="sticky top-0 z-50 bg-brand-panel/80 backdrop-blur-md border-b border-brand-border px-6 py-4 flex items-center justify-between">
+        <div className="flex items-center justify-between max-w-7xl mx-auto w-full">
+          <Typography variant="h5" component="h1" className="font-display font-bold tracking-tight text-white m-0">
+            CMIS UIUX
+          </Typography>
+        </div>
+      </header>
+
+      <div className="flex flex-col flex-grow max-w-7xl mx-auto w-full">
+        <nav className="w-full flex-shrink-0 border-b border-brand-border bg-brand-panel flex flex-col px-4 pt-2">
           <Tabs
-            orientation="vertical"
-            variant="standard"
+            variant="scrollable"
+            scrollButtons="auto"
             value={matchedIndex !== -1 ? matchedIndex : false}
-            sx={{ width: '100%', mt: 1, borderRight: 1, borderColor: 'divider', flexGrow: 1 }}
+            className="w-full"
+            TabIndicatorProps={{ style: { backgroundColor: '#f59e0b' } }}
           >
             {navLinks.map((link) => (
               <Tab
@@ -38,19 +43,41 @@ const AppLayout = () => {
                 label={link.label}
                 component={Link}
                 to={link.path}
-                sx={{ alignItems: 'flex-start', textAlign: 'left', pl: 3 }}
+                className="text-xs font-medium text-gray-400 min-w-0 px-4 py-3"
+                sx={{
+                  color: 'text.secondary',
+                  '&.Mui-selected': { color: '#f59e0b', fontWeight: 'bold' }
+                }}
               />
             ))}
           </Tabs>
-        </Box>
-        <Box component="main" sx={{ flexGrow: 1, p: 4, overflowY: 'auto' }}>
-          <Outlet /> {/* This is where nested routes will render */}
-        </Box>
+        </nav>
+
+        <main className="flex-grow p-4 lg:p-8 overflow-y-auto">
+          <Outlet /> 
+        </main>
+      </div>
+
+<Box
+        component="footer"
+        sx={{
+          position: 'fixed',
+          bottom: 0,
+          left: 0,
+          width: '100%',
+          borderTop: '1px solid #1E2943',
+          backgroundColor: '#131A2D',
+          py: 1,
+          textAlign: 'center',
+          fontSize: '10px',
+          color: '#6b7280',
+          fontFamily: 'monospace',
+          zIndex: 50,
+        }}
+      >
+        &copy; {new Date().getFullYear()} Cognitive Metrology Intelligence Service
       </Box>
-      <Box component="footer" sx={{ bgcolor: 'background.paper', p: 2, borderTop: 1, borderColor: 'divider', textAlign: 'center', color: 'text.secondary' }}>
-        <Typography variant="body2">&copy; 2023 Calibration Management System</Typography>
-      </Box>
-    </Box>
+    </div>
   );
 };
 

@@ -41,20 +41,20 @@ const getSelectedAnalyticsDataPoint = (state) => state.analytics?.selectedDataPo
 
 // --- Placeholder Components for Charts (Actual charts would use a charting library like Chart.js or Recharts) ---
 const ChartContainer = ({ title, data, children }) => (
-  <Paper sx={{ p: 2, height: 400, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', bgcolor: 'grey.100' }}>
-    <Typography variant="h6" color="text.secondary" gutterBottom>{title}</Typography>
+  <div className="bg-brand-panel border border-brand-border rounded-xl p-5 h-96 flex flex-col items-center justify-center shadow-md shadow-amber-500/10">
+    <Typography variant="h6" className="font-display font-bold text-gray-100 mb-2">{title}</Typography>
     {data && data.length === 0 ? (
-      <Typography variant="body2" color="text.secondary">No data available for selected filters.</Typography>
+      <Typography variant="body2" className="text-[11px] text-gray-500 font-mono">No data available for selected filters.</Typography>
     ) : (
       children
     )}
-  </Paper>
+  </div>
 );
 
 const CalibrationTrendChart = ({ data }) => (
   <ChartContainer title="Calibration Trend Chart" data={data}>
     {data && data.length > 0 && (
-      <Typography variant="caption" color="text.secondary" sx={{ mt: 1 }}>
+      <Typography variant="caption" className="text-[10px] text-gray-400 mt-2 font-mono">
         Displaying {data.length} trend points. (e.g., Line chart of deviation vs. date)
       </Typography>
     )}
@@ -64,7 +64,7 @@ const CalibrationTrendChart = ({ data }) => (
 const UncertaintyContributionChart = ({ data }) => (
   <ChartContainer title="Uncertainty Contribution Chart" data={data}>
     {data && data.length > 0 && (
-      <Typography variant="caption" color="text.secondary" sx={{ mt: 1 }}>
+      <Typography variant="caption" className="text-[10px] text-gray-400 mt-2 font-mono">
         Displaying {data.length} contributions. (e.g., Pie chart or Bar chart of contributions)
       </Typography>
     )}
@@ -74,17 +74,17 @@ const UncertaintyContributionChart = ({ data }) => (
 const InstrumentPerformanceHistoryTable = ({ data }) => (
   <ChartContainer title="Instrument Performance History" data={data}>
     {data && data.length > 0 ? (
-      <Box sx={{ width: '100%', overflowY: 'auto', maxHeight: 'calc(100% - 60px)' }}>
-        <Typography variant="body2" sx={{ fontWeight: 'bold', mb: 1 }}>Recent Events:</Typography>
-        {data.slice(0, 5).map((item, index) => ( // Display first 5 items for brevity
-          <Typography key={index} variant="body2" sx={{ mb: 0.5 }}>
-            <Box component="span" sx={{ fontWeight: 'medium' }}>
+      <Box className="w-full overflow-y-auto max-h-[calc(100%-60px)] pr-2">
+        <Typography variant="body2" className="font-display font-bold text-gray-300 mb-3 text-xs uppercase tracking-wider">Recent Events:</Typography>
+        {data.slice(0, 5).map((item, index) => (
+          <Typography key={index} variant="body2" className="text-[11px] font-mono text-gray-400 mb-2 border-b border-brand-border pb-2">
+            <span className="text-amber-400 font-medium">
               {item.date ? format(parseISO(item.date), 'yyyy-MM-dd HH:mm') : 'N/A'} - {item.instrumentId || 'N/A'}:
-            </Box>
-            &nbsp;{item.metric || 'N/A'} = {item.value || 'N/A'} {item.unit || ''} {item.description ? `(${item.description})` : ''}
+            </span>
+            &nbsp;<span className="text-blue-400">{item.metric || 'N/A'}</span> = <span className="text-gray-100">{item.value || 'N/A'} {item.unit || ''}</span> {item.description ? `(${item.description})` : ''}
           </Typography>
         ))}
-        {data.length > 5 && <Typography variant="caption" sx={{ mt: 1, display: 'block' }}>... {data.length - 5} more items. Scroll for full list.</Typography>}
+        {data.length > 5 && <Typography variant="caption" className="text-[9px] text-gray-500 mt-2 block font-mono">... {data.length - 5} more items. Scroll for full list.</Typography>}
       </Box>
     ) : null}
   </ChartContainer>
