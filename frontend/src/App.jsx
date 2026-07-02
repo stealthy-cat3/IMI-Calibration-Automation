@@ -5,11 +5,10 @@ import { Provider, useSelector } from 'react-redux';
 import { ThemeProvider, createTheme, CssBaseline } from '@mui/material';
 import AppRoutes from './Routes';
 import store from './store'; // Assuming a Redux store is defined in src/store/index.js or src/store.js
-import { selectThemeMode } from './store/settings/selectors';
 import ErrorBoundary from './components/ErrorBoundary';
 
 const ThemeWrapper = ({ children }) => {
-  const themeMode = useSelector(selectThemeMode);
+  const themeMode = useSelector(state => state.settings?.themeMode || 'light');
 
   const theme = useMemo(() => {
     let paletteConfig = { mode: 'light' };
